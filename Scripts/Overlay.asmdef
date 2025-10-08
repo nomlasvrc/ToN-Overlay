@@ -1,0 +1,19 @@
+{
+    "name": "Overlay",
+    "rootNamespace": "Nomlas.ToN_Overlay",
+    "references": [
+        "SteamVR",
+        "Unity.TextMeshPro",
+        "SteamVR_Actions",
+        "Unity.XR.OpenVR"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
