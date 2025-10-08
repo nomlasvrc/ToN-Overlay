@@ -1,5 +1,6 @@
 
 using System;
+using TMPro;
 using UnityEngine;
 using Valve.VR;
 
@@ -17,11 +18,16 @@ namespace Nomlas.ToN_Overlay
 
         // 変数たち
         private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
-        [SerializeField] private RenderTexture camRenderTexture;
+        private RenderTexture rt;
+        [SerializeField] private Camera overlayCamera;
+        [SerializeField] private TextMeshProUGUI overlayStatusText;
+        private bool hasSetTexture = false;
 
         private void Start()
         {
             overlayPreset = GetComponent<OverlayPreset>();
+
+            CreateTexture();
 
             InitOpenVR();
             overlayHandle = CreateOverlay(overlayKey, overlayName);
@@ -34,10 +40,18 @@ namespace Nomlas.ToN_Overlay
 
         private void Update()
         {
-            if (camRenderTexture != null && camRenderTexture.IsCreated())
+            if (!hasSetTexture && rt != null && rt.IsCreated() == true)
             {
-                SetOverlayRenderTexture(overlayHandle, camRenderTexture);
+                SetOverlayRenderTexture(overlayHandle, rt);
             }
+        }
+
+        private void CreateTexture()
+        {
+            if (rt != null) return;
+            rt = new RenderTexture(512, 512, 24, RenderTextureFormat.ARGB32);
+            rt.Create();
+            overlayCamera.targetTexture = rt;
         }
 
         private void StartInitializeProcess()
@@ -57,12 +71,14 @@ namespace Nomlas.ToN_Overlay
 
         #region オーバーレイの処理
 
-        private static void TryOverlayProcess(string func, EVROverlayError error)
+        private static bool TryOverlayProcess(string func, EVROverlayError error)
         {
             if (error != EVROverlayError.None)
             {
                 Debug.LogError($"[ToN_Overlay]{func}に失敗しました: {error}");
+                return false;
             }
+            return true;
         }
 
         private static ulong CreateOverlay(string key, string name)
@@ -102,7 +118,7 @@ namespace Nomlas.ToN_Overlay
             TryOverlayProcess("オーバーレイの表示", OpenVR.Overlay.ShowOverlay(handle));
         }
 
-        private static void SetOverlayRenderTexture(ulong handle, RenderTexture renderTexture)
+        private void SetOverlayRenderTexture(ulong handle, RenderTexture renderTexture)
         {
             var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
             var texture = new Texture_t
@@ -111,7 +127,12 @@ namespace Nomlas.ToN_Overlay
                 eType = ETextureType.DirectX,
                 handle = nativeTexturePtr
             };
-            TryOverlayProcess("テクスチャの描画", OpenVR.Overlay.SetOverlayTexture(handle, ref texture));
+            var isSuccess = TryOverlayProcess("テクスチャの描画", OpenVR.Overlay.SetOverlayTexture(handle, ref texture));
+            if (!hasSetTexture && isSuccess)
+            {
+                hasSetTexture = true;
+                overlayStatusText.text = "オーバーレイ: <color=green>準備完了</color>";
+            }
         }
 
         private static void DestroyOverlay(ulong handle)
@@ -143,6 +164,7 @@ namespace Nomlas.ToN_Overlay
 
         private void OnDestroy()
         {
+            rt?.Release();
             ShutdownOpenVR();
         }
 
